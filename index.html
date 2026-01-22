@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>81 Mimarın 81 Eseri Haritası</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>81 Mimarın 81 Eseri Haritası
+</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { 
+            --gold: #c5a059; 
+            --stone: #2c3e50;
+            --marble: #f4f4f4;
+            --accent: #e67e22;
+        }
+        
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Segoe UI', sans-serif; background: #e0e0e0; overflow: hidden; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; width: 100%; }
+        @media (min-width: 768px) { .app-container { flex-direction: row; } }
+
+        #map { flex: 1; width: 100%; z-index: 1; background: #d4dadc; }
+
+        /* Sağ Panel */
+        #info-panel { 
+            background: white; display: flex; flex-direction: column; z-index: 1000; 
+            box-shadow: -5px 0 25px rgba(0,0,0,0.1); overflow-y: auto;
+        }
+        @media (min-width: 768px) { #info-panel { width: 450px; height: 100%; border-left: 5px solid var(--stone); } }
+
+        .header { background: var(--stone); color: white; padding: 15px; text-align: center; }
+        .header h1 { margin: 0; font-size: 13px; letter-spacing: 2px;  }
+        
+        .search-area { padding: 12px; background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 20; }
+        select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; background: #f9f9f9; cursor: pointer; }
+        
+        .content-section { padding: 20px; border-bottom: 1px solid #f0f0f0; }
+        .section-title { font-size: 11px; color: var(--gold); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+        
+        h2 { margin: 0 0 10px 0; color: var(--stone); font-size: 22px; font-weight: 900; }
+        .desc-text { font-size: 14.5px; color: #444; line-height: 1.6; }
+
+        .wiki-image { 
+            width: 100%; border-radius: 8px; margin: 15px 0; 
+            display: none; object-fit: cover; max-height: 250px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #eee;
+        }
+
+        .wiki-link { 
+            display: none; margin-top: 12px; color: var(--accent); 
+            text-decoration: none; font-size: 13px; font-weight: 700;
+            border: 1px solid var(--accent); padding: 5px 10px; border-radius: 4px;
+            transition: all 0.3s; width: fit-content;
+        }
+      
+      @media (max-width: 767px) {
+  .app-container {
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  #map {
+    height: 50vh; /* Harita yüksekliği yarı ekran */
+    flex: none;   /* flex-grow kapat */
+  }
+
+  #info-panel {
+    height: 50vh; /* Panel yüksekliği yarı ekran */
+    overflow-y: auto; /* İçerik scroll */
+    border-left: none;
+    box-shadow: none;
+  }
+
+  #content-area {
+    flex: none;
+    padding-bottom: 60px; /* Buton için boşluk */
+  }
+
+  #wiki-link {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    margin-top: 0;
+    z-index: 10;
+    background: var(--steel-blue);
+    padding: 15px 0;
+    text-align: center;
+    border-radius: 0 0 6px 6px;
+    display: block !important;
+  }
+}
+        .wiki-link:hover { background: var(--accent); color: white; }
+
+        .translation-tag { 
+            font-size: 10px; background: #fff3e0; color: #e65100; 
+            padding: 2px 6px; border-radius: 4px; font-weight: bold; 
+            margin-bottom: 8px; display: inline-block; 
+        }
+
+        .loader { font-style: italic; color: #999; font-size: 13px; }
+
+        /* Marker */
+        .custom-marker {
+            width: 28px !important; height: 28px !important;
+            background: var(--stone); border: 2px solid white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); color: white; font-size: 14px;
+        }
+
+        /* Özel Zoom Butonları (Mobil Dostu) */
+        .leaflet-bottom.leaflet-right { margin-bottom: 20px; margin-right: 10px; }
+
+        #info-panel::-webkit-scrollbar { width: 6px; }
+        #info-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="map"></div>
+    <div id="info-panel">
+        <div class="header"><h1>81 Mimarın 81 Eseri Haritası
+</h1></div>
+        <div class="search-area">
+            <select id="archiSelect"><option value="">Usta veya Eser Seçin...</option></select>
+        </div>
+        
+        <div class="content-section">
+            <span class="section-title">Mimar / Sanatçı</span>
+            <h2 id="archi-name">Mimarlık Tarihi</h2>
+            <img id="archi-img" class="wiki-image">
+            <div id="archi-desc" class="desc-text">Keşfetmek için bir noktaya tıklayın.</div>
+            <a id="archi-link" href="#" target="_blank" class="wiki-link">Wiki Biyografi →</a>
+        </div>
+
+        <div class="content-section">
+            <span class="section-title">Başyapıt / Eser</span>
+            <h2 id="work-name">Eser Detayları</h2>
+            <img id="work-img" class="wiki-image">
+            <div id="work-desc" class="desc-text">Mimarın en önemli eseri burada görünecektir.</div>
+            <a id="work-link" href="#" target="_blank" class="wiki-link">Eser Detayları →</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const archiData = [
+
+ 
+
+  // --- ANTİK VE ORTAÇAĞ (1-10) ---
+  { name: "İmhotep", wikiName: "İmhotep", work: "Djoser Piramidi", wikiWork: "Basamaklı_Piramit", lat: 29.8712, lng: 31.2163 },
+  { name: "İktinos", wikiName: "Ictinus", work: "Parthenon", wikiWork: "Parthenon", lat: 37.9715, lng: 23.7266 },
+  { name: "Trallesli Anthemius", wikiName: "Trallesli_Anthemius", work: "Ayasofya", wikiWork: "Ayasofya", lat: 41.0085, lng: 28.9802 },
+  { name: "Abbot Suger", wikiName: "Abbot_Suger", work: "Saint-Denis Bazilikası", wikiWork: "Saint-Denis_Bazilikası", lat: 48.9355, lng: 2.3598 },
+  { name: "Robert de Luzarches", wikiName: "Robert_de_Luzarches", work: "Amiens Katedrali", wikiWork: "Amiens_Katedrali", lat: 49.8949, lng: 2.3021 },
+  { name: "Arnolfi di Cambio", wikiName: "Arnolfo_di_Cambio", work: "Palazzo Vecchio", wikiWork: "Palazzo_Vecchio", lat: 43.7693, lng: 11.2561 },
+  { name: "Yevele", wikiName: "Henry_Yevele", work: "Westminster Hall", wikiWork: "Westminster_Sarayı", lat: 51.4994, lng: -0.1246 },
+  { name: "Parler", wikiName: "Peter_Parler", work: "Aziz Vitus Katedrali", wikiWork: "Aziz_Vitus_Katedrali", lat: 50.0909, lng: 14.4005 },
+  
+  { name: "Filippo Brunelleschi", wikiName: "Filippo_Brunelleschi", work: "Floransa Katedrali Kubbesi", wikiWork: "Floransa_Katedrali", lat: 43.7731, lng: 11.2560 },
+
+  // --- RÖNESANS VE BAROK (11-40) ---
+  { name: "Leon Battista Alberti", wikiName: "Leon_Battista_Alberti", work: "Santa Maria Novella", wikiWork: "Santa_Maria_Novella", lat: 43.7746, lng: 11.2493 },
+  { name: "Michelangelo", wikiName: "Michelangelo", work: "Aziz Petrus Bazilikası", wikiWork: "Aziz_Petrus_Bazilikası", lat: 41.9022, lng: 12.4539 },
+  { name: "Mimar Sinan", wikiName: "Mimar_Sinan", work: "Selimiye Camii", wikiWork: "Selimiye_Camii", lat: 41.6783, lng: 26.5589 },
+  { name: "Andrea Palladio", wikiName: "Andrea_Palladio", work: "Villa La Rotonda", wikiWork: "Villa_La_Rotonda", lat: 45.5315, lng: 11.5600 },
+  { name: "Philibert de l'Orme", wikiName: "Philibert_de_l'Orme", work: "Château de Chenonceau", wikiWork: "Château_de_Chenonceau", lat: 47.3249, lng: 1.0702 },
+  { name: "Giacomo Barozzi da Vignola", wikiName: "Giacomo_Barozzi_da_Vignola", work: "Villa Farnese", wikiWork: "Villa_Farnese", lat: 42.3308, lng: 12.2319 },
+  { name: "Juan de Herrera", wikiName: "Juan_de_Herrera", work: "El Escorial", wikiWork: "El_Escorial", lat: 40.5892, lng: -4.1478 },
+  { name: "Sedefkar Mehmed Ağa", wikiName: "Sedefkar_Mehmed_Ağa", work: "Sultan Ahmet Camii", wikiWork: "Sultan_Ahmet_Camii", lat: 41.0054, lng: 28.9768 },
+  { name: "Inigo Jones", wikiName: "Inigo_Jones", work: "Banqueting House", wikiWork: "Banqueting_House,_Whitehall", lat: 51.5045, lng: -0.1263 },
+  { name: "Gian Lorenzo Bernini", wikiName: "Gian_Lorenzo_Bernini", work: "Aziz Petrus Meydanı", wikiWork: "Aziz_Petrus_Meydanı", lat: 41.9021, lng: 12.4566 },
+  { name: "Francesco Borromini", wikiName: "Francesco_Borromini", work: "San Carlo alle Quattro Fontane", wikiWork: "San_Carlo_alle_Quattro_Fontane", lat: 41.9014, lng: 12.4907 },
+  { name: "Louis Le Vau", wikiName: "Louis_Le_Vau", work: "Vaux-le-Vicomte", wikiWork: "Vaux-le-Vicomte", lat: 48.5658, lng: 2.7141 },
+  { name: "Christopher Wren", wikiName: "Christopher_Wren", work: "Aziz Paul Katedrali", wikiWork: "Aziz_Paul_Katedrali", lat: 51.5138, lng: -0.0984 },
+  { name: "Jules Hardouin-Mansart", wikiName: "Jules_Hardouin-Mansart", work: "Versay Sarayı", wikiWork: "Versay_Sarayı", lat: 48.8049, lng: 2.1204 },
+  { name: "Johann Bernhard Fischer von Erlach", wikiName: "Johann_Bernhard_Fischer_von_Erlach", work: "Karlskirche", wikiWork: "Karlskirche", lat: 48.1982, lng: 16.3714 },
+  { name: "Balthasar Neumann", wikiName: "Balthasar_Neumann", work: "Würzburg Residence", wikiWork: "Würzburg_Residence", lat: 49.7928, lng: 9.9387 },
+  
+  { name: "Ustad Ahmad Lahori", wikiName: "Ustad_Ahmad_Lahori", work: "Tac Mahal", wikiWork: "Tac_Mahal", lat: 27.1751, lng: 78.0421 },
+  { name: "Francesco Bartolomeo Rastrelli", wikiName: "Francesco_Bartolomeo_Rastrelli", work: "Kışlık Saray", wikiWork: "Kışlık_Saray", lat: 59.9404, lng: 30.3137 },
+  { name: "Jacques-Germain Soufflot", wikiName: "Jacques-Germain_Soufflot", work: "Panthéon", wikiWork: "Panthéon_(Paris)", lat: 48.8462, lng: 2.3464 },
+
+  // --- 19. YÜZYIL VE MODERNİZM (41-70) ---
+  // --- ANITSAL USTALAR VE TÜRKİYE/BÖLGE ODAKLI ESERLER (SON 32) ---
+
+  { name: "Apollodorus of Damascus", wikiName: "Apollodorus_of_Damascus", work: "Trajan Köprüsü", wikiWork: "Trajan's_Bridge", lat: 44.6236, lng: 22.6669 },
+ 
+  { name: "Mimar Hayreddin", wikiName: "Stari_Most", work: "Mostar Köprüsü", wikiWork: "Stari_Most", lat: 43.3373, lng: 17.8150 },
+  { name: "Atik Sinan", wikiName: "Atik_Sinan", work: "Fatih Camii", wikiWork: "Fatih_Mosque,_Istanbul", lat: 41.0197, lng: 28.9494 },
+ 
+  
+ 
+
+  { name: "Garabet Balyan", wikiName: "Garabet_Amira_Balyan", work: "Dolmabahçe Sarayı", wikiWork: "Dolmabahçe_Palace", lat: 41.0391, lng: 29.0019 },
+  { name: "Nigoğos Balyan", wikiName: "Nigoğos_Balyan", work: "Ortaköy Camisi", wikiWork: "Ortaköy_Mosque", lat: 41.0473, lng: 29.0270 },
+  { name: "Sarkis Balyan", wikiName: "Sarkis_Balyan", work: "Beylerbeyi Sarayı", wikiWork: "Beylerbeyi_Palace", lat: 41.0427, lng: 29.0398 },
+  { name: "Alexandre Vallaury", wikiName: "Alexandre_Vallaury", work: "Pera Palace Hotel", wikiWork: "Pera_Palace_Hotel", lat: 41.0315, lng: 28.9745 },
+ 
+
+ 
+  { name: "Mimar Kemaleddin Bey", wikiName: "Mimar_Kemaleddin_Bey", work: "Tayyare Apartmanları", wikiWork: "Tayyare Apartmanları", lat: 41.0104, lng: 28.9564 },
+ 
+
+  
+
+
+
+ 
+ 
+  
+  { name: "Benedikt Ried", wikiName: "Benedikt_Ried", work: "Vladislav Hall", wikiWork: "Vladislav_Hall", lat: 50.0911, lng: 14.4016 },
+ 
+ 
+  
+  { name: "Thomas Jefferson", wikiName: "Thomas_Jefferson", work: "Virginia Üniversitesi", wikiWork: "Virginia_Üniversitesi", lat: 38.0336, lng: -78.5080 },
+  { name: "Karl Friedrich Schinkel", wikiName: "Karl_Friedrich_Schinkel", work: "Altes Museum", wikiWork: "Altes_Museum", lat: 52.5194, lng: 13.3983 },
+  { name: "John Nash", wikiName: "John_Nash_(architect)", work: "Royal Pavilion", wikiWork: "Royal_Pavilion", lat: 50.8222, lng: -0.1378 },
+  { name: "Charles Barry", wikiName: "Charles_Barry", work: "Westminster Sarayı", wikiWork: "Westminster_Sarayı", lat: 51.4994, lng: -0.1246 },
+  { name: "Joseph Paxton", wikiName: "Joseph_Paxton", work: "Kristal Saray", wikiWork: "Kristal_Saray", lat: 51.4214, lng: -0.0705 },
+  { name: "Charles Garnier", wikiName: "Charles_Garnier", work: "Palais Garnier", wikiWork: "Palais_Garnier", lat: 48.8719, lng: 2.3316 },
+  { name: "Gustave Eiffel", wikiName: "Gustave_Eiffel", work: "Eiffel Kulesi", wikiWork: "Eiffel_Kulesi", lat: 48.8584, lng: 2.2945 },
+  { name: "Louis Sullivan", wikiName: "Louis_Sullivan", work: "Wainwright Binası", wikiWork: "Wainwright_Building", lat: 38.6289, lng: -90.1917 },
+  { name: "Antoni Gaudí", wikiName: "Antoni_Gaudí", work: "Sagrada Família", wikiWork: "Sagrada_Família", lat: 41.4036, lng: 2.1744 },
+  { name: "Victor Horta", wikiName: "Victor_Horta", work: "Hôtel Tassel", wikiWork: "Hôtel_Tassel", lat: 50.8276, lng: 4.3582 },
+
+  { name: "Hendrik Petrus Berlage", wikiName: "Hendrik_Petrus_Berlage", work: "Beurs van Berlage", wikiWork: "Beurs_van_Berlage", lat: 52.3750, lng: 4.8961 },
+  { name: "Auguste Perret", wikiName: "Auguste_Perret", work: "Théâtre des Champs-Élysées", wikiWork: "Théâtre_des_Champs-Élysées", lat: 48.8659, lng: 2.3025 },
+
+  { name: "Adolf Loos", wikiName: "Adolf_Loos", work: "Looshaus", wikiWork: "Looshaus", lat: 48.2084, lng: 16.3664 },
+  { name: "Walter Gropius", wikiName: "Walter_Gropius", work: "Bauhaus Okulu", wikiWork: "Bauhaus", lat: 51.8419, lng: 12.2270 },
+ 
+
+  { name: "Gerrit Rietveld", wikiName: "Gerrit_Rietveld", work: "Rietveld Schröder Evi", wikiWork: "Rietveld_Schröder_Evi", lat: 52.0853, lng: 5.1475 },
+
+
+
+  { name: "Eero Saarinen", wikiName: "Eero_Saarinen", work: "TWA Terminali", wikiWork: "TWA_Flight_Center", lat: 40.6458, lng: -73.7777 },
+
+  { name: "Oscar Niemeyer", wikiName: "Oscar_Niemeyer", work: "Niterói Güncel Sanat Müzesi", wikiWork: "Niterói_Contemporary_Art_Museum", lat: -22.9077, lng: -43.1259 },
+  { name: "Kenzo Tange", wikiName: "Kenzō_Tange", work: "Yoyogi Ulusal Spor Salonu", wikiWork: "Yoyogi_Ulusal_Spor_Salonu", lat: 35.6679, lng: 139.7003 },
+ 
+  { name: "Luis Barragán", wikiName: "Luis_Barragán", work: "Torres de Satélite", wikiWork: "Torres_de_Satélite", lat: 19.4921, lng: -99.2311 },
+  { name: "Jørn Utzon", wikiName: "Jørn_Utzon", work: "Sidney Opera Evi", wikiWork: "Sidney_Opera_Evi", lat: -33.8568, lng: 151.2153 },
+  { name: "Philip Johnson", wikiName: "Philip_Johnson", work: "Glass House", wikiWork: "Glass_House", lat: 41.1417, lng: -73.4867 },
+
+  // --- ÇAĞDAŞ VE PRITZKER DÖNEMİ (71-100) ---
+  { name: "Hassan Fathy", wikiName: "Hassan_Fathy", work: "New Gourna Village", wikiWork: "New_Gourna", lat: 25.7206, lng: 32.6103 },
+  { name: "Basil Al Bayati", wikiName: "Basil_Al_Bayati", work: "Great Mosque of Edinburgh", wikiWork: "Edinburgh_Central_Mosque", lat: 55.9455, lng: -3.1856 },
+  
+  { name: "I. M. Pei", wikiName: "I._M._Pei", work: "Louvre Piramidi", wikiWork: "Louvre_Piramidi", lat: 48.8608, lng: 2.3358 },
+  { name: "James Stirling", wikiName: "James_Stirling_(architect)", work: "Neue Staatsgalerie", wikiWork: "Neue_Staatsgalerie", lat: 48.7801, lng: 9.1864 },
+ 
+  { name: "Robert Venturi", wikiName: "Robert_Venturi", work: "Vanna Venturi Evi", wikiWork: "Vanna_Venturi_House", lat: 40.0666, lng: -75.1956 },
+  { name: "Richard Rogers", wikiName: "Richard_Rogers", work: "Lloyd's Binası", wikiWork: "Lloyd's_building", lat: 51.5131, lng: -0.0822 },
+  { name: "Renzo Piano", wikiName: "Renzo_Piano", work: "The Shard", wikiWork: "The_Shard", lat: 51.5045, lng: -0.0865 },
+  { name: "Norman Foster", wikiName: "Norman_Foster", work: "The Gherkin", wikiWork: "30_St_Mary_Axe", lat: 51.5145, lng: -0.0803 },
+  { name: "Frank Gehry", wikiName: "Frank_Gehry", work: "Guggenheim Müzesi Bilbao", wikiWork: "Guggenheim_Müzesi_Bilbao", lat: 43.2685, lng: -2.9340 },
+ 
+  { name: "Rem Koolhaas", wikiName: "Rem_Koolhaas", work: "Casa da Música", wikiWork: "Casa_da_Música", lat: 41.1589, lng: -8.6308 },
+  { name: "Tadao Ando", wikiName: "Tadao_Ando", work: "Işık Kilisesi", wikiWork: "Işık_Kilisesi", lat: 34.8181, lng: 135.5397 },
+  { name: "Jean Nouvel", wikiName: "Jean_Nouvel", work: "Louvre Abu Dhabi", wikiWork: "Louvre_Abu_Dhabi", lat: 24.5336, lng: 54.3982 },
+  { name: "Santiago Calatrava", wikiName: "Santiago_Calatrava", work: "Sanat ve Bilim Şehri", wikiWork: "Ciudad_de_las_Artes_y_las_Ciencias", lat: 39.4551, lng: -0.3504 },
+  
+  { name: "Peter Zumthor", wikiName: "Peter_Zumthor", work: "Therme Vals", wikiWork: "Therme_Vals", lat: 46.6219, lng: 9.1811 },
+  { name: "Toyo Ito", wikiName: "Toyo_Ito", work: "Sendai Mediatheque", wikiWork: "Sendai_Mediatheque", lat: 38.2652, lng: 140.8659 },
+  
+  { name: "Shigeru Ban", wikiName: "Shigeru_Ban", work: "Cardboard Cathedral", wikiWork: "Cardboard_Cathedral", lat: -43.5323, lng: 172.6426 },
+  { name: "Wang Shu", wikiName: "Wang_Shu", work: "Ningbo Tarih Müzesi", wikiWork: "Ningbo_Museum", lat: 29.8174, lng: 121.5459 },
+  
+  
+  { name: "David Chipperfield", wikiName: "David_Chipperfield", work: "Neues Museum", wikiWork: "Neues_Museum", lat: 52.5201, lng: 13.3976 },
+  { name: "Bjarke Ingels", wikiName: "Bjarke_Ingels", work: "CopenHill", wikiWork: "Amager_Bakke", lat: 55.6885, lng: 12.6224 },
+  { name: "Kengo Kuma", wikiName: "Kengo_Kuma", work: "V&A Dundee", wikiWork: "V%26A_Dundee", lat: 56.4574, lng: -2.9669 },
+
+  { name: "Thom Mayne", wikiName: "Thom_Mayne", work: "Perot Doğa ve Bilim Müzesi", wikiWork: "Perot_Museum_of_Nature_and_Science", lat: 32.7869, lng: -96.8067 },
+  { name: "Steven Holl", wikiName: "Steven_Holl", work: "Simmons Hall", wikiWork: "Simmons_Hall", lat: 42.3571, lng: -71.1009 },
+  
+  { name: "Emre Arolat", wikiName: "Emre_Arolat", work: "Sancaklar Camii", wikiWork: "Sancaklar_Camii", lat: 41.1278, lng: 28.6256 },
+
+];
+
+const map = L.map('map', { 
+    zoomControl: true, // + - butonlarını tekrar açtık
+    preferCanvas: true,
+    zoomAnimation: true
+}).setView([20, 0], 2);
+
+// Telifsiz Altlık
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OSM & CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+}).addTo(map);
+
+const select = document.getElementById('archiSelect');
+
+// Markerlar
+archiData.forEach(item => {
+    L.marker([item.lat, item.lng], { 
+        icon: L.divIcon({ className: 'custom-marker', html: '🏛️' }) 
+    }).addTo(map).on('click', () => updateAll(item));
+    
+    const opt = document.createElement('option');
+    opt.value = item.name; 
+    opt.textContent = `${item.name} (${item.work})`;
+    select.appendChild(opt);
+});
+
+select.onchange = (e) => {
+    const item = archiData.find(d => d.name === e.target.value);
+    if (item) updateAll(item);
+};
+
+// Çeviri
+async function translateText(text) {
+    try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=tr&dt=t&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        return data[0].map(x => x[0]).join('');
+    } catch { return text; }
+}
+
+async function fetchWiki(pageTitle, type) {
+    const descEl = document.getElementById(`${type}-desc`);
+    const imgEl = document.getElementById(`${type}-img`);
+    const linkEl = document.getElementById(`${type}-link`);
+
+    try {
+        let res = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${pageTitle}`);
+        let data = await res.json();
+        let isTranslated = false;
+
+        if (data.status === 404 || !data.extract) {
+            res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${pageTitle}`);
+            data = await res.json();
+            if (data.extract) {
+                data.extract = await translateText(data.extract);
+                isTranslated = true;
+            }
+        }
+
+        descEl.innerHTML = (isTranslated ? '<span class="translation-tag">🌐 Otomatik Çeviri</span><br>' : '') + data.extract;
+        
+        if (data.thumbnail) {
+            imgEl.src = data.thumbnail.source;
+            imgEl.style.display = 'block';
+        } else {
+            imgEl.style.display = 'none';
+        }
+
+        // Linkleri güncelle ve göster
+        linkEl.href = data.content_urls.desktop.page;
+        linkEl.style.display = 'inline-block';
+
+    } catch (e) {
+        descEl.textContent = "Veri alınamadı.";
+        linkEl.style.display = 'none';
+    }
+}
+
+// Sinematik ve Yavaş Geçiş
+function updateAll(item) {
+    map.flyTo([item.lat, item.lng], 12, {
+        animate: true,
+        duration: 5, // Daha da yavaşlattık (3.5 saniye)
+        easeLinearity: 0.2
+    });
+
+    document.getElementById('archi-name').textContent = item.name;
+    document.getElementById('work-name').textContent = item.work;
+    document.getElementById('archi-desc').innerHTML = '<span class="loader">Yükleniyor...</span>';
+    document.getElementById('work-desc').innerHTML = '<span class="loader">Yükleniyor...</span>';
+    
+    fetchWiki(item.wikiName, 'archi');
+    fetchWiki(item.wikiWork, 'work');
+}
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
